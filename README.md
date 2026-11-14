@@ -31,8 +31,9 @@ everything is already at home — no shopping trip needed.
 - **Recipe detail** — ingredients split into "You have" and "To pick up",
   numbered cooking steps, servings and difficulty.
 - **Accounts, like every other app** — the app opens on a sign-in screen:
-  create an account with email + password, log in, continue with Google
-  (Firebase Authentication), or continue without an account. Signed in,
+  create an account with email + password (with confirm password), log in,
+  forgot-password reset link by email, continue with Google (Firebase
+  Authentication), or continue without an account. Signed in,
   your profile, saved recipes and fridge list live in your own account
   and follow you across devices.
 - **Profile settings** — in Settings you can change your profile picture
