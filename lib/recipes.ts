@@ -1,25 +1,23 @@
 import { Platform } from 'react-native';
 
-import { demoRecipes } from './demo-recipes';
 import type { Diet, MealType, Recipe, RecipeRequest, RecipeSource } from './types';
 
 /**
- * Recipe client.
+ * Recipe client — live AI only.
  *
- * On web, requests go to the app's own /api/recipes endpoint (a Vercel
- * Python serverless function holding the Gemini key server-side), so the
- * web app answers with live AI and no setup. On native, the same
- * endpoint is used when the deployed URL is configured; otherwise the
- * on-device demo engine answers. Any failure falls back to the demo
- * engine — the app never shows a dead end.
+ * Requests go to the app's own /api/recipes endpoint (a Vercel Python
+ * serverless function holding the Gemini key server-side). On web the
+ * relative path is used; native builds call the deployed origin. Any
+ * failure throws, and the UI shows a friendly retry state — there is
+ * no on-device fallback recipe book anymore.
  */
 
-/** Deployed web origin for native builds; empty until the first deploy. */
-const DEPLOYED_ORIGIN = '';
+/** Deployed web origin used by native builds. */
+const DEPLOYED_ORIGIN = 'https://fridgetomeal.vercel.app';
 
-function endpointUrl(): string | null {
+function endpointUrl(): string {
   if (Platform.OS === 'web') return '/api/recipes';
-  return DEPLOYED_ORIGIN ? `${DEPLOYED_ORIGIN}/api/recipes` : null;
+  return `${DEPLOYED_ORIGIN}/api/recipes`;
 }
 
 interface ApiRecipeResponse {
@@ -59,32 +57,31 @@ export interface RecipeResult {
   source: RecipeSource;
 }
 
-export async function findRecipes(request: RecipeRequest): Promise<RecipeResult> {
-  const url = endpointUrl();
-  if (url) {
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
-      });
-      const data = (await response.json().catch(() => ({}))) as ApiRecipeResponse;
-      if (response.ok && Array.isArray(data.recipes)) {
-        const recipes = data.recipes
-          .map((r, i) => normalizeLiveRecipe(r, i))
-          .filter((r): r is Recipe => r !== null)
-          .slice(0, 4);
-        if (recipes.length > 0) return { recipes, source: 'live' };
-      }
-    } catch {
-      // Network or endpoint unavailable — fall through to demo mode.
-    }
-  }
-  return { recipes: demoRecipes(request.ingredients, request.diet, request.mealType), source: 'demo' };
-}
+const SERVICE_ERROR = 'The recipe service could not answer just now. Please try again in a moment.';
 
-export function emptyResult(request: RecipeRequest): RecipeResult {
-  return { recipes: demoRecipes(request.ingredients, request.diet, request.mealType), source: 'demo' };
+export async function findRecipes(request: RecipeRequest): Promise<RecipeResult> {
+  let response: Response;
+  try {
+    response = await fetch(endpointUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+  } catch {
+    throw new Error('Could not reach the recipe service. Check your connection and try again.');
+  }
+  const data = (await response.json().catch(() => ({}))) as ApiRecipeResponse;
+  if (!response.ok || !Array.isArray(data.recipes)) {
+    throw new Error(SERVICE_ERROR);
+  }
+  const recipes = data.recipes
+    .map((r, i) => normalizeLiveRecipe(r, i))
+    .filter((r): r is Recipe => r !== null)
+    .slice(0, 4);
+  if (recipes.length === 0) {
+    throw new Error(SERVICE_ERROR);
+  }
+  return { recipes, source: 'live' };
 }
 
 export type { Diet, MealType };

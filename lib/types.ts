@@ -22,11 +22,11 @@ export interface Recipe {
   missing: string[];
   steps: string[];
   tags: string[];
-  /** 'live' = Gemini via the server endpoint; 'demo' = on-device sample. */
-  source: 'live' | 'demo';
+  /** Recipes always come live from Gemini via the server endpoint. */
+  source: 'live';
 }
 
-export type RecipeSource = 'live' | 'demo';
+export type RecipeSource = 'live';
 
 export interface RecipeRequest {
   ingredients: string[];

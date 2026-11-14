@@ -31,8 +31,6 @@ export const palette = {
   error: '#B3261E',
   errorSoft: '#FCE8E6',
   success: '#177245',
-  demo: '#8A6D00',
-  demoSoft: '#FFF3BF',
 } as const;
 
 export const spacing = {
