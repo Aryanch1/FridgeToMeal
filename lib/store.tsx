@@ -189,8 +189,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Auth state: profile write, cloud saved-recipes + history subscriptions.
   useEffect(() => {
+    let alive = true;
+    // Readiness waits for Firebase to finish restoring any persisted
+    // session from storage — the gate must not decide "signed out" (and
+    // show Welcome) before the saved session has had its chance to load.
+    void auth.authStateReady().then(() => {
+      if (alive) setAuthReady(true);
+    });
     const unsub = onAuthStateChanged(auth, (u) => {
-      setAuthReady(true);
       if (cloudUnsubRef.current) {
         cloudUnsubRef.current();
         cloudUnsubRef.current = null;
@@ -291,7 +297,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       })();
     });
-    return unsub;
+    return () => {
+      alive = false;
+      unsub();
+    };
   }, []);
 
   const signIn = useCallback(async () => {
