@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
-import { Alert, Image, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuroraBackground } from '../components/AuroraBackground';
@@ -14,22 +16,24 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const r = useResponsive();
-  const { saved, clearSaved, clearIngredients, resultSource, user, signIn, signOut } = useApp();
+  const {
+    saved,
+    clearSaved,
+    clearIngredients,
+    resultSource,
+    user,
+    signOut,
+    updateDisplayName,
+    setAvatarData,
+    sendPasswordReset,
+  } = useApp();
   const [confirmClear, setConfirmClear] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
-  const [authMsg, setAuthMsg] = useState<string | null>(null);
-
-  const doSignIn = async () => {
-    setAuthBusy(true);
-    setAuthMsg(null);
-    try {
-      await signIn();
-    } catch {
-      setAuthMsg('Sign-in did not complete. Please try again.');
-    } finally {
-      setAuthBusy(false);
-    }
-  };
+  // null = untouched; the field then simply shows the account name.
+  const [draftName, setDraftName] = useState<string | null>(null);
+  const nameValue = draftName ?? user?.name ?? '';
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<string | null>(null);
 
   const doSignOut = async () => {
     setAuthBusy(true);
@@ -37,6 +41,64 @@ export default function SettingsScreen() {
       await signOut();
     } finally {
       setAuthBusy(false);
+    }
+  };
+
+  const doSaveName = async () => {
+    if (!nameValue.trim() || nameValue.trim() === (user?.name ?? '')) return;
+    setProfileBusy(true);
+    setProfileMsg(null);
+    try {
+      await updateDisplayName(nameValue);
+      setProfileMsg('Name updated.');
+    } catch {
+      setProfileMsg('Name could not be saved. Try again.');
+    } finally {
+      setProfileBusy(false);
+    }
+  };
+
+  const doChangePicture = async () => {
+    setProfileMsg(null);
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      setProfileMsg('Photo access is needed to set a picture — allow it in your device settings.');
+      return;
+    }
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (picked.canceled || !picked.assets[0]) return;
+    setProfileBusy(true);
+    try {
+      const resized = await ImageManipulator.manipulateAsync(
+        picked.assets[0].uri,
+        [{ resize: { width: 256, height: 256 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+      );
+      if (!resized.base64) throw new Error('no image data');
+      await setAvatarData(`data:image/jpeg;base64,${resized.base64}`);
+      setProfileMsg('Profile picture updated.');
+    } catch {
+      setProfileMsg('That picture could not be saved. Try another one.');
+    } finally {
+      setProfileBusy(false);
+    }
+  };
+
+  const doPasswordReset = async () => {
+    setProfileBusy(true);
+    setProfileMsg(null);
+    try {
+      await sendPasswordReset();
+      setProfileMsg('Password reset email sent — check your inbox.');
+    } catch {
+      setProfileMsg('Reset email could not be sent. Try again.');
+    } finally {
+      setProfileBusy(false);
     }
   };
 
@@ -86,8 +148,46 @@ export default function SettingsScreen() {
                   <View style={styles.profileText}>
                     <Text style={styles.profileName}>{user.name ?? 'Signed in'}</Text>
                     <Text style={styles.profileEmail}>{user.email ?? ''}</Text>
+                    <Text style={styles.profileEmail}>
+                      {user.provider === 'google.com'
+                        ? 'Signed in with Google'
+                        : 'Signed in with email'}
+                    </Text>
                   </View>
                 </View>
+                <View style={styles.row}>
+                  <GhostButton
+                    label={profileBusy ? 'Working…' : 'Change profile picture'}
+                    onPress={doChangePicture}
+                  />
+                </View>
+                <Text style={styles.fieldLabel}>Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={nameValue}
+                  onChangeText={setDraftName}
+                  placeholder="Your name"
+                  placeholderTextColor={palette.muted}
+                  autoCapitalize="words"
+                  autoComplete="name"
+                />
+                {nameValue.trim() && nameValue.trim() !== (user.name ?? '') ? (
+                  <View style={styles.row}>
+                    <GhostButton
+                      label={profileBusy ? 'Saving…' : 'Save name'}
+                      onPress={doSaveName}
+                    />
+                  </View>
+                ) : null}
+                {user.provider === 'password' ? (
+                  <View style={styles.row}>
+                    <GhostButton
+                      label="Email me a password reset link"
+                      onPress={doPasswordReset}
+                    />
+                  </View>
+                ) : null}
+                {profileMsg ? <Text style={styles.authMsg}>{profileMsg}</Text> : null}
                 <Text style={styles.cardBody}>
                   Your saved recipes and fridge list sync to your account, so they are there on
                   every device you sign in on.
@@ -99,15 +199,14 @@ export default function SettingsScreen() {
             ) : (
               <>
                 <Text style={styles.cardBody}>
-                  Sign in with Google to keep your saved recipes and fridge list in your account —
-                  they follow you across devices, and signing in takes a few seconds.
+                  Create an account or log in to keep your saved recipes and fridge list in your
+                  account — they follow you across devices. Use Google, or your email and a
+                  password.
                 </Text>
-                {authMsg ? <Text style={styles.authMsg}>{authMsg}</Text> : null}
                 <View style={styles.row}>
                   <PrimaryButton
-                    label={authBusy ? 'Opening Google…' : 'Continue with Google'}
-                    onPress={doSignIn}
-                    disabled={authBusy}
+                    label="Create account or log in"
+                    onPress={() => router.push('/welcome')}
                   />
                 </View>
               </>
@@ -184,5 +283,23 @@ const styles = StyleSheet.create({
   profileText: { flex: 1, marginLeft: spacing.md },
   profileName: { color: palette.ink, fontSize: 17, fontWeight: '800' },
   profileEmail: { color: palette.muted, fontSize: 14, fontWeight: '600', marginTop: 2 },
-  authMsg: { color: palette.body, fontSize: 14, lineHeight: 20, marginBottom: spacing.sm },
+  authMsg: { color: palette.body, fontSize: 14, lineHeight: 20, marginBottom: spacing.sm, marginTop: spacing.sm },
+  fieldLabel: {
+    color: palette.muted,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    marginBottom: 6,
+    marginTop: spacing.md,
+  },
+  input: {
+    backgroundColor: palette.glassStrong,
+    borderColor: palette.line,
+    borderRadius: 24,
+    borderWidth: 1,
+    color: palette.ink,
+    fontSize: 16,
+    minHeight: 52,
+    paddingHorizontal: spacing.md,
+  },
 });
