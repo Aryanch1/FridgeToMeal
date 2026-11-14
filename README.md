@@ -34,7 +34,7 @@ everything is already at home — no shopping trip needed.
   create an account with email + password (with confirm password), log in,
   forgot-password reset link by email, continue with Google (Firebase
   Authentication), or continue without an account. Signed in,
-  your profile, saved recipes and fridge list live in your own account
+  your profile, saved recipes and search history live in your own account
   and follow you across devices.
 - **Profile settings** — in Settings you can change your profile picture
   and your display name, see how you signed in, and (for email accounts)
@@ -61,7 +61,8 @@ everything is already at home — no shopping trip needed.
 - **Firebase Authentication + Cloud Firestore** — email/password and
   Google sign-in, per-user profile (name, avatar) and saved-recipe
   storage with owner-only security rules
-- **AsyncStorage** for the signed-out local copy of saved recipes and ingredients
+- **AsyncStorage** for the signed-out local copy of saved recipes and search history
+  (the ingredient selection itself is never persisted — every visit starts fresh)
 
 ## How to run
 
