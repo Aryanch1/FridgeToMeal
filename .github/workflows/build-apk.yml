@@ -61,3 +61,4 @@ jobs:
             Turn what's already in your fridge into dinner — AI-matched recipes ranked by how much of each one you already have.
 
             Note: this build is signed with a debug key (same as a local preview build), so Android may ask you to allow installing from your browser/files the first time.
+          files: FridgeToMeal.apk
