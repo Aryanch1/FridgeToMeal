@@ -34,8 +34,12 @@ import { findRecipes } from './recipes';
 import type { Diet, MealType, Recipe, RecipeSource } from './types';
 
 const SAVED_KEY = 'fridgetomeal:saved-recipes:v1';
-const INGREDIENTS_KEY = 'fridgetomeal:ingredients:v1';
+const HISTORY_KEY = 'fridgetomeal:history:v1';
 const GUEST_KEY = 'fridgetomeal:guest:v1';
+/** Older builds persisted the in-progress ingredient list; it is removed on
+ *  startup now — every visit starts fresh, searches live in History. */
+const LEGACY_INGREDIENTS_KEY = 'fridgetomeal:ingredients:v1';
+const HISTORY_LIMIT = 20;
 
 export interface AuthUser {
   uid: string;
@@ -44,6 +48,15 @@ export interface AuthUser {
   photo: string | null;
   /** 'google.com' or 'password' — how this account signs in. */
   provider: string | null;
+}
+
+export interface HistoryEntry {
+  id: string;
+  ingredients: string[];
+  diet: Diet;
+  mealType: MealType;
+  /** Epoch milliseconds of the search. */
+  at: number;
 }
 
 export interface AppState {
@@ -55,6 +68,7 @@ export interface AppState {
   loading: boolean;
   error: string | null;
   saved: Recipe[];
+  history: HistoryEntry[];
   user: AuthUser | null;
   authReady: boolean;
   guest: boolean;
@@ -76,6 +90,8 @@ export interface AppState {
   refreshResults: () => Promise<void>;
   toggleSaved: (recipe: Recipe) => void;
   clearSaved: () => void;
+  applyHistory: (entry: HistoryEntry) => void;
+  clearHistory: () => void;
   isSaved: (id: string) => boolean;
   recipeById: (id: string) => Recipe | undefined;
 }
@@ -125,39 +141,52 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<Recipe[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [guest, setGuest] = useState(false);
   const savedRef = useRef<Recipe[]>([]);
+  const historyRef = useRef<HistoryEntry[]>([]);
+  const historyLoadedRef = useRef(false);
   const cloudUnsubRef = useRef<(() => void) | null>(null);
-  const fridgeReadyRef = useRef(false);
+  const historyUnsubRef = useRef<(() => void) | null>(null);
 
-  // Local (signed-out) data loads once at startup.
+  // Local (signed-out) data loads once at startup. Note: the ingredient
+  // selection is NOT restored — every visit starts fresh; past searches
+  // are kept in History instead.
   useEffect(() => {
     AsyncStorage.getItem(SAVED_KEY).then((raw) => {
       const parsed = loadJson<Recipe[]>(raw);
       if (parsed) setSaved(parsed);
     });
-    AsyncStorage.getItem(INGREDIENTS_KEY).then((raw) => {
-      const parsed = loadJson<string[]>(raw);
-      if (parsed) setIngredients(parsed);
-    });
+    AsyncStorage.getItem(HISTORY_KEY)
+      .then((raw) => {
+        const parsed = loadJson<HistoryEntry[]>(raw);
+        if (parsed) setHistory(parsed);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        historyLoadedRef.current = true;
+      });
+    AsyncStorage.removeItem(LEGACY_INGREDIENTS_KEY).catch(() => undefined);
     AsyncStorage.getItem(GUEST_KEY).then((raw) => {
       if (raw === '1') setGuest(true);
     });
   }, []);
 
-  // Keep a local mirror of the saved list and the fridge list.
+  // Keep a local mirror of the saved list and the search history.
   useEffect(() => {
     savedRef.current = saved;
     AsyncStorage.setItem(SAVED_KEY, JSON.stringify(saved)).catch(() => undefined);
   }, [saved]);
 
   useEffect(() => {
-    AsyncStorage.setItem(INGREDIENTS_KEY, JSON.stringify(ingredients)).catch(() => undefined);
-  }, [ingredients]);
+    historyRef.current = history;
+    if (!historyLoadedRef.current) return;
+    AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history)).catch(() => undefined);
+  }, [history]);
 
-  // Auth state: profile write, cloud saved-recipes subscription, fridge sync.
+  // Auth state: profile write, cloud saved-recipes + history subscriptions.
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setAuthReady(true);
@@ -165,7 +194,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         cloudUnsubRef.current();
         cloudUnsubRef.current = null;
       }
-      fridgeReadyRef.current = false;
+      if (historyUnsubRef.current) {
+        historyUnsubRef.current();
+        historyUnsubRef.current = null;
+      }
       if (!u) {
         setUser(null);
         return;
@@ -204,17 +236,45 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       })();
 
-      // Profile doc: the account fridge list wins when it exists, and a
-      // custom avatar / edited name stored there overrides the auth copy.
+      const historyCol = collection(db, 'users', u.uid, 'history');
+      historyUnsubRef.current = onSnapshot(
+        historyCol,
+        (snap) => {
+          const cloud = snap.docs.map((d) => d.data() as HistoryEntry);
+          setHistory((prev) => {
+            const byId = new Map<string, HistoryEntry>();
+            for (const e of [...cloud, ...prev]) byId.set(e.id, e);
+            return [...byId.values()]
+              .sort((a, b) => b.at - a.at)
+              .slice(0, HISTORY_LIMIT);
+          });
+        },
+        () => undefined,
+      );
+
+      // One-time merge: searches made on this device before sign-in join
+      // the account history.
+      void (async () => {
+        try {
+          const cloud = await getDocs(historyCol);
+          const cloudIds = new Set(cloud.docs.map((d) => d.id));
+          for (const entry of historyRef.current) {
+            if (!cloudIds.has(entry.id)) {
+              await setDoc(doc(db, 'users', u.uid, 'history', entry.id), entry);
+            }
+          }
+        } catch {
+          // Best-effort merge only.
+        }
+      })();
+
+      // Profile doc: a custom avatar / edited name stored there overrides
+      // the auth copy.
       void (async () => {
         try {
           const snap = await getDoc(doc(db, 'users', u.uid));
           if (snap.exists()) {
             const data = snap.data();
-            const fridge = data.fridge as string[] | undefined;
-            if (Array.isArray(fridge)) {
-              setIngredients(fridge);
-            }
             setUser((prev) =>
               prev && prev.uid === u.uid
                 ? {
@@ -226,22 +286,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             );
           }
         } catch {
-          // Keep the local list and auth profile.
-        } finally {
-          fridgeReadyRef.current = true;
+          // Keep the auth profile.
         }
       })();
     });
     return unsub;
   }, []);
-
-  // Write the fridge list through to the account once it has loaded.
-  useEffect(() => {
-    if (!user || !fridgeReadyRef.current) return;
-    setDoc(doc(db, 'users', user.uid), { fridge: ingredients }, { merge: true }).catch(
-      () => undefined,
-    );
-  }, [ingredients, user]);
 
   const signIn = useCallback(async () => {
     await signInWithGoogle();
@@ -331,6 +381,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const { recipes, source } = await findRecipes({ ingredients, diet, mealType });
       setResults(recipes);
       setResultSource(source);
+      // Save the search to History. The selection itself is never
+      // auto-restored — a fresh visit starts fresh; History is a list the
+      // user can re-use on purpose.
+      if (ingredients.length > 0) {
+        const signature = (list: string[], d: Diet, m: MealType) =>
+          `${[...list].sort().join('|')}·${d}·${m}`;
+        const newest = historyRef.current[0];
+        if (!newest || signature(newest.ingredients, newest.diet, newest.mealType) !== signature(ingredients, diet, mealType)) {
+          const entry: HistoryEntry = {
+            id: `${Date.now()}`,
+            ingredients: [...ingredients],
+            diet,
+            mealType,
+            at: Date.now(),
+          };
+          setHistory((prev) => [entry, ...prev].slice(0, HISTORY_LIMIT));
+          const uid = auth.currentUser?.uid;
+          if (uid) {
+            void setDoc(doc(db, 'users', uid, 'history', entry.id), entry).catch(
+              () => undefined,
+            );
+          }
+        }
+      }
       if (recipes.length === 0) {
         setError('No recipes matched those ingredients yet. Try adding one more item from your fridge.');
       }
@@ -383,6 +457,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSaved([]);
   }, [user]);
 
+  const applyHistory = useCallback((entry: HistoryEntry) => {
+    setIngredients([...entry.ingredients]);
+    setDiet(entry.diet);
+    setMealType(entry.mealType);
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setHistory([]);
+    if (user) {
+      void (async () => {
+        try {
+          const snap = await getDocs(collection(db, 'users', user.uid, 'history'));
+          await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+        } catch {
+          // The subscription will reconcile the visible list.
+        }
+      })();
+    }
+  }, [user]);
+
   const isSaved = useCallback((id: string) => saved.some((r) => r.id === id), [saved]);
 
   const recipeById = useCallback(
@@ -400,6 +494,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       loading,
       error,
       saved,
+      history,
       user,
       authReady,
       guest,
@@ -421,6 +516,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       refreshResults,
       toggleSaved,
       clearSaved,
+      applyHistory,
+      clearHistory,
       isSaved,
       recipeById,
     }),
@@ -433,6 +530,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       loading,
       error,
       saved,
+      history,
       user,
       authReady,
       guest,
@@ -452,6 +550,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       refreshResults,
       toggleSaved,
       clearSaved,
+      applyHistory,
+      clearHistory,
       isSaved,
       recipeById,
     ],
