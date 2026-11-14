@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuroraBackground } from '../components/AuroraBackground';
@@ -14,8 +14,31 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const r = useResponsive();
-  const { saved, clearSaved, clearIngredients, resultSource } = useApp();
+  const { saved, clearSaved, clearIngredients, resultSource, user, signIn, signOut } = useApp();
   const [confirmClear, setConfirmClear] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authMsg, setAuthMsg] = useState<string | null>(null);
+
+  const doSignIn = async () => {
+    setAuthBusy(true);
+    setAuthMsg(null);
+    try {
+      await signIn();
+    } catch {
+      setAuthMsg('Sign-in did not complete. Please try again.');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const doSignOut = async () => {
+    setAuthBusy(true);
+    try {
+      await signOut();
+    } finally {
+      setAuthBusy(false);
+    }
+  };
 
   const doClearSaved = () => {
     if (Platform.OS === 'web') {
@@ -47,15 +70,58 @@ export default function SettingsScreen() {
           <SectionHeader kicker="Your app" title="Settings" />
 
           <GlassCard style={styles.card}>
+            <Text style={styles.cardTitle}>Account</Text>
+            {user ? (
+              <>
+                <View style={styles.profileRow}>
+                  {user.photo ? (
+                    <Image source={{ uri: user.photo }} style={styles.avatar} />
+                  ) : (
+                    <View style={[styles.avatar, styles.avatarFallback]}>
+                      <Text style={styles.avatarInitial}>
+                        {(user.name ?? user.email ?? '?').slice(0, 1).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.profileText}>
+                    <Text style={styles.profileName}>{user.name ?? 'Signed in'}</Text>
+                    <Text style={styles.profileEmail}>{user.email ?? ''}</Text>
+                  </View>
+                </View>
+                <Text style={styles.cardBody}>
+                  Your saved recipes and fridge list sync to your account, so they are there on
+                  every device you sign in on.
+                </Text>
+                <View style={styles.row}>
+                  <GhostButton label={authBusy ? 'Signing out…' : 'Sign out'} onPress={doSignOut} />
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.cardBody}>
+                  Sign in with Google to keep your saved recipes and fridge list in your account —
+                  they follow you across devices, and signing in takes a few seconds.
+                </Text>
+                {authMsg ? <Text style={styles.authMsg}>{authMsg}</Text> : null}
+                <View style={styles.row}>
+                  <PrimaryButton
+                    label={authBusy ? 'Opening Google…' : 'Continue with Google'}
+                    onPress={doSignIn}
+                    disabled={authBusy}
+                  />
+                </View>
+              </>
+            )}
+          </GlassCard>
+
+          <GlassCard style={styles.card}>
             <Text style={styles.cardTitle}>Recipes</Text>
             <Text style={styles.cardBody}>
-              {saved.length} saved recipe{saved.length === 1 ? '' : 's'} · stored only on this device.
+              {saved.length} saved recipe{saved.length === 1 ? '' : 's'} ·{' '}
+              {user ? 'synced to your account.' : 'stored only on this device.'}
             </Text>
             <Text style={styles.cardBody}>
-              Suggestions: {resultSource === 'live' ? 'live AI' : resultSource === 'demo' ? 'demo recipes' : 'not searched yet'}
-              {resultSource === 'demo'
-                ? ' — the hosted AI endpoint is not configured, so the on-device recipe book answers.'
-                : ''}
+              Suggestions: {resultSource === 'live' ? 'live AI' : 'not searched yet'}
             </Text>
             <View style={styles.row}>
               <GhostButton
@@ -81,9 +147,10 @@ export default function SettingsScreen() {
               by how much you already have.
             </Text>
             <Text style={styles.cardBody}>
-              Version 1.0.0 · Built with React Native, Expo and TypeScript. Recipes by Gemini AI
-              when the hosted endpoint is configured, with an on-device demo recipe book as a
-              fallback. Your ingredients and saved recipes never leave this device.
+              Version 1.1.0 · Built with React Native, Expo and TypeScript. Every recipe is
+              suggested live by Gemini AI through the hosted recipe service. Signed in, your
+              saved recipes and fridge list sync to your own account; signed out, they stay on
+              this device.
             </Text>
             <Text style={styles.copy}>© 2026 Aryanmouli Cherupalli</Text>
             <View style={styles.row}>
@@ -106,4 +173,16 @@ const styles = StyleSheet.create({
   cardBody: { color: palette.body, fontSize: 15, lineHeight: 22, marginBottom: spacing.sm },
   copy: { color: palette.muted, fontSize: 13, fontWeight: '600', marginBottom: spacing.md },
   row: { marginTop: spacing.sm },
+  profileRow: { alignItems: 'center', flexDirection: 'row', marginBottom: spacing.sm },
+  avatar: { borderRadius: 26, height: 52, width: 52 },
+  avatarFallback: {
+    alignItems: 'center',
+    backgroundColor: palette.primarySoft,
+    justifyContent: 'center',
+  },
+  avatarInitial: { color: palette.primary, fontSize: 22, fontWeight: '800' },
+  profileText: { flex: 1, marginLeft: spacing.md },
+  profileName: { color: palette.ink, fontSize: 17, fontWeight: '800' },
+  profileEmail: { color: palette.muted, fontSize: 14, fontWeight: '600', marginTop: 2 },
+  authMsg: { color: palette.body, fontSize: 14, lineHeight: 20, marginBottom: spacing.sm },
 });

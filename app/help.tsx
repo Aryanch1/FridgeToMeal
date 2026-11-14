@@ -19,11 +19,11 @@ const FAQS = [
   },
   {
     q: 'Where do the recipes come from?',
-    a: 'When the hosted AI endpoint is configured, Gemini suggests recipes live. Otherwise the app answers from its built-in demo recipe book — clearly labelled “Demo recipes” — so it always works.',
+    a: 'Gemini AI suggests every recipe live, through FridgeToMeal’s own recipe service — there is no built-in sample set. If the service cannot be reached, the app says so and lets you retry.',
   },
   {
     q: 'Is my food data sent anywhere?',
-    a: 'Your ingredients and saved recipes live only on your device. Only the ingredient list itself is sent to the recipe endpoint when you search, and only to generate your recipes.',
+    a: 'Only the ingredient list itself is sent to the recipe service when you search, and only to generate your recipes. If you sign in with Google, your saved recipes and fridge list are stored in your own account so they follow you across devices; signed out, they stay only on this device.',
   },
   {
     q: 'How do I refresh the suggestions?',
@@ -31,7 +31,7 @@ const FAQS = [
   },
   {
     q: 'Can I save a recipe for later?',
-    a: 'Yes — open any recipe and tap “Save recipe”. Saved recipes live on the Saved tab, on this device.',
+    a: 'Yes — open any recipe and tap “Save recipe”. Signed in, saved recipes live in your account and appear on all your devices; signed out, they live on the Saved tab on this device.',
   },
 ];
 

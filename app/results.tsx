@@ -8,7 +8,7 @@ import { OrbRefresh } from '../components/OrbRefresh';
 import { RecipeCard } from '../components/RecipeCard';
 import { RecipeDetail } from '../components/RecipeDetail';
 import { TabBar } from '../components/TabBar';
-import { DemoBadge, EmptyState, IconButton, LiveBadge, SectionHeader, Skeleton } from '../components/ui';
+import { EmptyState, IconButton, LiveBadge, SectionHeader, Skeleton } from '../components/ui';
 import { useApp } from '../lib/store';
 import { palette, spacing, useResponsive } from '../lib/theme';
 
@@ -43,7 +43,7 @@ export default function ResultsScreen() {
           {results.length === 1 ? '' : 's'}
         </Text>
       </View>
-      {resultSource === 'live' ? <LiveBadge /> : <DemoBadge />}
+      {resultSource === 'live' ? <LiveBadge /> : null}
       <IconButton label="⟳" onPress={() => setRefreshSignal((s) => s + 1)} />
     </View>
   );
@@ -87,12 +87,6 @@ export default function ResultsScreen() {
           </View>
         ))}
       </View>
-      {resultSource === 'demo' && results.length > 0 ? (
-        <Text style={styles.demoNote}>
-          Showing demo recipes — the hosted AI endpoint is not configured yet, so these come from
-          the on-device recipe book.
-        </Text>
-      ) : null}
     </View>
   );
 
@@ -152,7 +146,6 @@ const styles = StyleSheet.create({
   skeletons: { gap: spacing.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6, marginTop: spacing.md },
   cardWrap: { padding: 6 },
-  demoNote: { color: palette.muted, fontSize: 13, lineHeight: 19, marginTop: spacing.lg, textAlign: 'center' },
   singlePane: { flex: 1 },
   twoPane: { flex: 1, flexDirection: 'row' },
   twoPaneList: { flex: 1 },
