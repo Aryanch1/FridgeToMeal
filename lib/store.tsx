@@ -169,9 +169,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         historyLoadedRef.current = true;
       });
     AsyncStorage.removeItem(LEGACY_INGREDIENTS_KEY).catch(() => undefined);
-    AsyncStorage.getItem(GUEST_KEY).then((raw) => {
-      if (raw === '1') setGuest(true);
-    });
+    // Guest mode is per-visit only: clear any older persisted guest flag so
+    // the Welcome screen asks again on the next open.
+    AsyncStorage.removeItem(GUEST_KEY).catch(() => undefined);
   }, []);
 
   // Keep a local mirror of the saved list and the search history.
@@ -356,8 +356,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const continueAsGuest = useCallback(() => {
+    // Deliberately NOT persisted: guest lasts for this visit only, so the
+    // next open asks for sign-in again. A signed-in user, by contrast,
+    // stays signed in (Firebase Auth persistence).
     setGuest(true);
-    AsyncStorage.setItem(GUEST_KEY, '1').catch(() => undefined);
   }, []);
 
   const addIngredient = useCallback((name: string) => {
