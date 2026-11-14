@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  auth,
+  db,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   sendPasswordResetEmail,
@@ -7,7 +9,7 @@ import {
   signOut as firebaseSignOut,
   updateProfile,
   type User,
-} from 'firebase/auth';
+} from './firebase';
 import {
   collection,
   deleteDoc,
@@ -17,7 +19,7 @@ import {
   onSnapshot,
   serverTimestamp,
   setDoc,
-} from 'firebase/firestore';
+} from './firebase';
 import React, {
   createContext,
   useCallback,
@@ -28,7 +30,6 @@ import React, {
   useState,
 } from 'react';
 
-import { auth, db } from './firebase';
 import { signInWithGoogle } from './google';
 import { findRecipes } from './recipes';
 import type { Diet, MealType, Recipe, RecipeSource } from './types';

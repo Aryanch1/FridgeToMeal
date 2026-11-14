@@ -1,17 +1,23 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import * as firebaseAuth from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { Platform } from 'react-native';
 
 /**
- * Firebase wiring for FridgeToMeal (project fridgetomeal-b08fe).
+ * Firebase wiring for FridgeToMeal (project fridgetomeal-b08fe) — web.
  *
  * The web config values below are Firebase's public app identifiers —
  * they are designed to ship in client code. Access is controlled by
  * Firebase Authentication plus the Firestore security rules (each user
  * can only read and write their own /users/<uid> tree). No admin keys
  * or secrets live here; the Gemini key stays server-side on Vercel.
+ *
+ * Platform note: this file serves web (and tooling). Native builds use
+ * firebase.native.ts instead, which imports the scoped @firebase/*
+ * packages — the umbrella 'firebase/auth' entry has no React Native
+ * build, so on Android/iOS it silently resolves to the browser build
+ * whose sessions live in memory only and are lost when the app closes.
+ * Every module imports its Auth/Firestore helpers from './firebase' so
+ * each platform always gets one consistent set of Firebase modules.
  */
 const firebaseConfig = {
   apiKey: 'AIzaSyAgT6gPO5zgKG8ht0S9zKyaxS7vKbhSYTM',
@@ -28,28 +34,29 @@ export const GOOGLE_WEB_CLIENT_ID =
 
 export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-function createAuth(): firebaseAuth.Auth {
-  if (Platform.OS === 'web') {
-    return firebaseAuth.getAuth(firebaseApp);
-  }
-  // On native, persist the session in AsyncStorage so the user stays
-  // signed in between app launches, like every other app.
-  const getPersistence = (
-    firebaseAuth as unknown as {
-      getReactNativePersistence?: (storage: unknown) => firebaseAuth.Persistence;
-    }
-  ).getReactNativePersistence;
-  if (getPersistence) {
-    try {
-      return firebaseAuth.initializeAuth(firebaseApp, {
-        persistence: getPersistence(AsyncStorage),
-      });
-    } catch {
-      // Already initialized (fast refresh) — fall through to getAuth.
-    }
-  }
-  return firebaseAuth.getAuth(firebaseApp);
-}
-
-export const auth = createAuth();
+export const auth = firebaseAuth.getAuth(firebaseApp);
 export const db = getFirestore(firebaseApp);
+
+export {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithCredential,
+  type User,
+} from 'firebase/auth';
+
+export {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+} from 'firebase/firestore';
