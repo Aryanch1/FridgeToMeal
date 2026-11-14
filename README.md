@@ -7,7 +7,7 @@ odds and ends sitting in your fridge, pick a diet and a meal type, and get four
 recipes ranked by how much of each one you already have. A 100% match means
 everything is already at home — no shopping trip needed.
 
-> **Live web app:** https://fridgetomeal.vercel.app _(deploy pending)_
+> **Live web app:** https://fridgetomeal.vercel.app
 > **Design (Figma):** https://www.figma.com/design/mfASzzHADWywiJdCMzhwkd — "FridgeToMeal — Daily App" (tokens, components, and the full screen flow; canvas content to be filled in — the design spec in DESIGN.md is the source of truth)
 > **Author:** © 2026 Aryanmouli Cherupalli
 
@@ -30,7 +30,12 @@ everything is already at home — no shopping trip needed.
   plus exactly what you'd still need to pick up.
 - **Recipe detail** — ingredients split into "You have" and "To pick up",
   numbered cooking steps, servings and difficulty.
-- **Save favourites** — recipes you like live on the Saved tab, stored on-device.
+- **Google sign-in** — sign in with your Google account (Firebase
+  Authentication). Your profile, saved recipes and fridge list live in your
+  own account and follow you across devices; signed out, everything stays
+  on this device.
+- **Save favourites** — recipes you like live on the Saved tab, stored
+  in your account when signed in, on-device when not.
 - **Custom pull-to-refresh** — pull the results list and a glass orb fills with
   colour; release for fresh recipes. On web, the header refresh button plays
   the same animation.
@@ -38,8 +43,6 @@ everything is already at home — no shopping trip needed.
   spring-physics motion, pill buttons with haptics, and a floating glass tab bar.
 - **Responsive** — phones, tablets and foldables (two-pane list + detail on
   wide screens) and desktop web, all from one codebase.
-- **Demo mode** — when the hosted AI endpoint isn't configured, the app answers
-  from its built-in recipe book and says so clearly. It always works.
 
 ## Tech stack
 
@@ -50,7 +53,9 @@ everything is already at home — no shopping trip needed.
 - **Google Gemini** (`gemini-3.5-flash-lite`) via the OpenAI-compatible endpoint
 - **Python backend** — `api/recipes.py`, a Vercel serverless function that holds
   the Gemini key server-side (never in the app or the repo)
-- **AsyncStorage** for saved recipes and ingredients (on-device only)
+- **Firebase Authentication + Cloud Firestore** — Google sign-in, per-user
+  profile and saved-recipe storage with owner-only security rules
+- **AsyncStorage** for the signed-out local copy of saved recipes and ingredients
 
 ## How to run
 
@@ -63,9 +68,9 @@ npm run web        # Web dev server
 npm run export:web # Static web build into dist/
 ```
 
-Set `GEMINI_API_KEY` in your Vercel project (or locally for the API route) to
-enable live AI suggestions. Without it, the app runs in demo mode with its
-built-in recipe book.
+`GEMINI_API_KEY` is set in the Vercel project, which enables the live AI
+suggestions for everyone — the app always serves real Gemini recipes and
+shows a retry message if the service cannot be reached.
 
 ## Project structure
 
@@ -74,7 +79,8 @@ app/            Expo Router screens: index (splash + home), results,
                 recipe/[id], saved, settings, help
 components/     Reusable kit: buttons, glass cards, chips, skeletons,
                 OrbRefresh (custom pull-to-refresh), RecipeCard, TabBar
-lib/            theme tokens, types, demo recipes, AI client, app store
+lib/            theme tokens, types, AI client, app store, Firebase
+                wiring (auth + Firestore) and Google sign-in flows
 api/            recipes.py — Python serverless recipe endpoint (Vercel)
 assets/         App icon, splash, favicon
 DESIGN.md       Full design spec: tokens, screen inventory, animation plan

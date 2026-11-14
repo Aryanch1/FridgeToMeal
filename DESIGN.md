@@ -33,7 +33,7 @@ Text contrast stays accessible on glass at all times.
    fridge items, diet selector, meal-type selector, gradient "Find recipes" CTA
    (shows ingredient count inside the pill). Below: two stat cards
    (1.3B tonnes wasted / 4 recipes per search) and a "How it works" ghost button.
-3. **Results** — header (back, title, Live AI / Demo badge, refresh button),
+3. **Results** — header (back, title, Live AI badge, refresh button),
    then recipe cards in a glass sheet over the hero. Each card: cuisine kicker,
    title, description, green match ring (big % + quiet "MATCH" label), stat strip
    (minutes / servings / have-count / level), tags, missing-ingredient note.
@@ -45,15 +45,16 @@ Text contrast stays accessible on glass at all times.
    screen on phones; as the right pane on tablets/foldables/desktop.
 5. **Saved** — saved-recipe grid (same card component), empty state with a
    "Find a recipe" action, saved-count badge on the tab bar.
-6. **Settings / Profile** — recipe storage info + source note (live vs demo),
+6. **Settings / Profile** — Google account card (sign in / profile / sign out),
+   recipe storage info (account-synced when signed in, on-device when not),
    clear saved recipes (two-tap confirm on web, native alert on mobile), clear
    ingredients, About card with version and copyright.
 7. **Help** — six FAQ glass cards answering how it works, what match % means,
    where recipes come from, data privacy, how to refresh, how to save.
 8. **Empty states** — no ingredients (home hint + error line on Find),
    no results, no saved recipes. Each has a next step, never a dead end.
-9. **Error state** — endpoint failure falls back to demo recipes and says so;
-   a total failure shows an error card with "Try again".
+9. **Error state** — an endpoint failure shows an error card with "Try again";
+   recipes are live AI only, there is no fallback recipe book.
 
 ## Transition & animation plan
 
@@ -98,7 +99,7 @@ tap targets ≥ 44px, layouts reflow instantly on resize / rotation / unfold.
 
 `ui.tsx` — SpringPress, PrimaryButton (gradient + glow), GhostButton,
 IconButton, Chip, GlassCard, BouncingDots, Skeleton, EmptyState,
-SectionHeader, DemoBadge / LiveBadge. `AuroraBackground.tsx` — gradient +
+SectionHeader, LiveBadge. `AuroraBackground.tsx` — gradient +
 drifting blobs. `OrbRefresh.tsx` — custom refresh. `RecipeCard.tsx` —
 match ring + stat strip. `RecipeDetail.tsx` — detail sections. `TabBar.tsx`
 — floating glass pill tab bar with saved-count badge.

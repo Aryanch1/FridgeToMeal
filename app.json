@@ -1,1 +1,44 @@
-{"expo":{"android":{"adaptiveIcon":{"backgroundColor":"#0E5C2E","foregroundImage":"./assets/adaptive-icon.png"},"package":"com.aryanmouli.fridgetomeal"},"experiments":{"typedRoutes":true},"icon":"./assets/icon.png","ios":{"bundleIdentifier":"com.aryanmouli.fridgetomeal","supportsTablet":true},"name":"FridgeToMeal","orientation":"portrait","plugins":["expo-router","expo-asset","expo-status-bar",["expo-splash-screen",{"backgroundColor":"#EAF7EE","image":"./assets/splash.png","imageWidth":200,"resizeMode":"contain"}],"expo-font"],"scheme":"fridgetomeal","slug":"fridgetomeal","userInterfaceStyle":"light","version":"1.0.0","web":{"favicon":"./assets/favicon.png"}}}
+{
+  "expo": {
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0E5C2E",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "package": "com.aryanmouli.fridgetomeal"
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "icon": "./assets/icon.png",
+    "ios": {
+      "bundleIdentifier": "com.aryanmouli.fridgetomeal",
+      "supportsTablet": true
+    },
+    "name": "FridgeToMeal",
+    "orientation": "portrait",
+    "plugins": [
+      "expo-router",
+      "expo-asset",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#EAF7EE",
+          "image": "./assets/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ],
+      "expo-font",
+      "@react-native-google-signin/google-signin"
+    ],
+    "scheme": "fridgetomeal",
+    "slug": "fridgetomeal",
+    "userInterfaceStyle": "light",
+    "version": "1.1.0",
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
