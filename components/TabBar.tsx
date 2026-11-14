@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { palette, radii } from '../lib/theme';
@@ -27,8 +27,12 @@ export function TabBar() {
 
   return (
     <View style={[styles.wrap, { bottom: Math.max(insets.bottom, 12) }]} pointerEvents="box-none">
-      <BlurView intensity={22} tint="light" style={styles.bar}>
-        {TABS.map((tab) => {
+      <View style={styles.barShadow}>
+        <View style={styles.bar}>
+          {Platform.OS === 'web' ? (
+            <BlurView intensity={22} tint="light" style={StyleSheet.absoluteFill} />
+          ) : null}
+          {TABS.map((tab) => {
           const active = pathname === tab.route || (tab.route === '/' && pathname === '/index');
           const badge = tab.route === '/saved' ? saved.length : 0;
           return (
@@ -48,14 +52,27 @@ export function TabBar() {
               </View>
             </SpringPress>
           );
-        })}
-      </BlurView>
+          })}
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', left: 0, position: 'absolute', right: 0 },
+  // Shadow + background live on this outer pill: Android elevation on a
+  // clipped, background-less BlurView rendered as a hard white plate
+  // behind the bar. The inner bar only clips and lays out the tabs.
+  barShadow: {
+    backgroundColor: palette.glassStrong,
+    borderRadius: radii.pill,
+    shadowColor: '#10281A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 8,
+  },
   bar: {
     borderColor: 'rgba(255,255,255,0.75)',
     borderRadius: radii.pill,
@@ -63,11 +80,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     overflow: 'hidden',
     padding: 6,
-    shadowColor: '#10281A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 8,
   },
   tabPress: { flex: 1 },
   tab: {

@@ -188,10 +188,21 @@ export function GlassCard({
   style?: object;
   intensity?: number;
 }) {
+  // Two layers on purpose: the outer view carries the background and the
+  // shadow (Android elevation needs a real background, and a shadow on a
+  // clipped view renders as a hard white plate offset behind the card —
+  // the "white backside" testers saw on Android). The inner view clips
+  // the content to the rounded shape. Real backdrop blur is web-only;
+  // on native the translucent surface over the aurora reads as frost.
   return (
-    <BlurView intensity={intensity} tint="light" style={[styles.glassCard, style]}>
-      <View style={styles.glassInner}>{children}</View>
-    </BlurView>
+    <View style={[styles.glassShadow, style]}>
+      <View style={styles.glassClip}>
+        {Platform.OS === 'web' ? (
+          <BlurView intensity={intensity} tint="light" style={StyleSheet.absoluteFill} />
+        ) : null}
+        <View style={styles.glassInner}>{children}</View>
+      </View>
+    </View>
   );
 }
 
@@ -338,12 +349,16 @@ const styles = StyleSheet.create({
   },
   chipLabel: { color: palette.ink, fontSize: 15, fontWeight: '700' },
   chipLabelSelected: { color: '#FFFFFF' },
-  glassCard: {
-    borderColor: 'rgba(255,255,255,0.7)',
+  glassShadow: {
+    backgroundColor: palette.glass,
+    borderRadius: radii.card,
+    ...shadows.card,
+  },
+  glassClip: {
+    borderColor: 'rgba(255,255,255,0.75)',
     borderRadius: radii.card,
     borderWidth: 1,
     overflow: 'hidden',
-    ...shadows.card,
   },
   glassInner: { padding: spacing.md },
   dots: { alignItems: 'center', flexDirection: 'row', gap: 6, height: 24, justifyContent: 'center' },
