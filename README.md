@@ -8,7 +8,6 @@ recipes ranked by how much of each one you already have. A 100% match means
 everything is already at home — no shopping trip needed.
 
 > **Live web app:** https://fridgetomeal.vercel.app
-> **Design (Figma):** https://www.figma.com/design/mfASzzHADWywiJdCMzhwkd — "FridgeToMeal — Daily App" (tokens, components, and the full screen flow; canvas content to be filled in — the design spec in DESIGN.md is the source of truth)
 > **Author:** © 2026 Aryanmouli Cherupalli
 
 ## Who it helps
