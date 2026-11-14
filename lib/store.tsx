@@ -1,5 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { onAuthStateChanged, signOut as firebaseSignOut, type User } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  updateProfile,
+  type User,
+} from 'firebase/auth';
 import {
   collection,
   deleteDoc,
@@ -34,6 +42,8 @@ export interface AuthUser {
   name: string | null;
   email: string | null;
   photo: string | null;
+  /** 'google.com' or 'password' — how this account signs in. */
+  provider: string | null;
 }
 
 export interface AppState {
@@ -49,6 +59,12 @@ export interface AppState {
   authReady: boolean;
   guest: boolean;
   signIn: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (name: string, email: string, password: string) => Promise<void>;
+  updateDisplayName: (name: string) => Promise<void>;
+  setAvatarData: (dataUrl: string) => Promise<void>;
+  sendPasswordReset: () => Promise<void>;
+  resetPasswordForEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   continueAsGuest: () => void;
   addIngredient: (name: string) => void;
@@ -154,7 +170,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         return;
       }
-      setUser({ uid: u.uid, name: u.displayName, email: u.email, photo: u.photoURL });
+      setUser({
+        uid: u.uid,
+        name: u.displayName,
+        email: u.email,
+        photo: u.photoURL,
+        provider: u.providerData[0]?.providerId ?? null,
+      });
       void upsertProfile(u);
 
       const savedCol = collection(db, 'users', u.uid, 'saved');
@@ -182,16 +204,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       })();
 
-      // Fridge list: the account copy wins when it exists.
+      // Profile doc: the account fridge list wins when it exists, and a
+      // custom avatar / edited name stored there overrides the auth copy.
       void (async () => {
         try {
           const snap = await getDoc(doc(db, 'users', u.uid));
-          const fridge = snap.exists() ? (snap.data().fridge as string[] | undefined) : undefined;
-          if (Array.isArray(fridge)) {
-            setIngredients(fridge);
+          if (snap.exists()) {
+            const data = snap.data();
+            const fridge = data.fridge as string[] | undefined;
+            if (Array.isArray(fridge)) {
+              setIngredients(fridge);
+            }
+            setUser((prev) =>
+              prev && prev.uid === u.uid
+                ? {
+                    ...prev,
+                    name: (data.displayName as string) || prev.name,
+                    photo: (data.photoData as string) || prev.photo,
+                  }
+                : prev,
+            );
           }
         } catch {
-          // Keep the local list.
+          // Keep the local list and auth profile.
         } finally {
           fridgeReadyRef.current = true;
         }
@@ -210,6 +245,56 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async () => {
     await signInWithGoogle();
+  }, []);
+
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email.trim(), password);
+  }, []);
+
+  const signUpWithEmail = useCallback(
+    async (name: string, email: string, password: string) => {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const cleanName = name.trim();
+      if (cleanName) {
+        await updateProfile(cred.user, { displayName: cleanName });
+        // Refresh the visible profile + Firestore doc with the new name.
+        setUser({
+          uid: cred.user.uid,
+          name: cleanName,
+          email: cred.user.email,
+          photo: null,
+          provider: 'password',
+        });
+        void upsertProfile({ ...cred.user, displayName: cleanName } as User);
+      }
+    },
+    [],
+  );
+
+  const updateDisplayName = useCallback(async (name: string) => {
+    const current = auth.currentUser;
+    if (!current) return;
+    const clean = name.trim();
+    await updateProfile(current, { displayName: clean });
+    await setDoc(doc(db, 'users', current.uid), { displayName: clean }, { merge: true });
+    setUser((prev) => (prev ? { ...prev, name: clean } : prev));
+  }, []);
+
+  const setAvatarData = useCallback(async (dataUrl: string) => {
+    const current = auth.currentUser;
+    if (!current) return;
+    await setDoc(doc(db, 'users', current.uid), { photoData: dataUrl }, { merge: true });
+    setUser((prev) => (prev ? { ...prev, photo: dataUrl } : prev));
+  }, []);
+
+  const sendPasswordReset = useCallback(async () => {
+    const current = auth.currentUser;
+    if (!current?.email) return;
+    await sendPasswordResetEmail(auth, current.email);
+  }, []);
+
+  const resetPasswordForEmail = useCallback(async (email: string) => {
+    await sendPasswordResetEmail(auth, email.trim());
   }, []);
 
   const signOut = useCallback(async () => {
@@ -319,6 +404,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       authReady,
       guest,
       signIn,
+      signInWithEmail,
+      signUpWithEmail,
+      updateDisplayName,
+      setAvatarData,
+      sendPasswordReset,
+      resetPasswordForEmail,
       signOut,
       continueAsGuest,
       addIngredient,
@@ -346,6 +437,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       authReady,
       guest,
       signIn,
+      signInWithEmail,
+      signUpWithEmail,
+      updateDisplayName,
+      setAvatarData,
+      sendPasswordReset,
+      resetPasswordForEmail,
       signOut,
       continueAsGuest,
       addIngredient,
