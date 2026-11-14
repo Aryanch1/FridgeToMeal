@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState, type ElementRef } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -87,6 +87,18 @@ export default function HomeScreen() {
   const [showSplash, setShowSplash] = useState(true);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<ElementRef<typeof ScrollView>>(null);
+
+  // Tapping a past search loads it into the form at the top of the page —
+  // scroll back up so the user actually sees it load (before this, the tap
+  // applied silently off-screen and looked like nothing happened).
+  const onUseHistory = (entry: (typeof history)[number]) => {
+    applyHistory(entry);
+    setError(null);
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    });
+  };
 
   const submitDraft = () => {
     const value = draft.trim();
@@ -219,7 +231,7 @@ export default function HomeScreen() {
           <GlassCard>
             <Text style={styles.historyTitle}>Recent searches</Text>
             {history.slice(0, 5).map((entry) => (
-              <SpringPress key={entry.id} onPress={() => applyHistory(entry)}>
+              <SpringPress key={entry.id} onPress={() => onUseHistory(entry)} haptic>
                 <View style={styles.historyRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.historyMain}>{entry.ingredients.join(', ')}</Text>
@@ -234,7 +246,9 @@ export default function HomeScreen() {
                       {formatWhen(entry.at)}
                     </Text>
                   </View>
-                  <Text style={styles.historyUse}>Use</Text>
+                  <View style={styles.historyUsePill}>
+                    <Text style={styles.historyUse}>Use</Text>
+                  </View>
                 </View>
               </SpringPress>
             ))}
@@ -260,6 +274,7 @@ export default function HomeScreen() {
           style={styles.root}
         >
           <ScrollView
+            ref={scrollRef}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[
               styles.scrollContent,
@@ -380,5 +395,14 @@ const styles = StyleSheet.create({
   },
   historyMain: { color: palette.ink, fontSize: 15, fontWeight: '700' },
   historySub: { color: palette.muted, fontSize: 12, fontWeight: '600', marginTop: 2 },
-  historyUse: { color: palette.primary, fontSize: 14, fontWeight: '800' },
+  historyUse: { color: palette.primaryDeep, fontSize: 14, fontWeight: '800' },
+  historyUsePill: {
+    alignItems: 'center',
+    backgroundColor: palette.primarySoft,
+    borderRadius: radii.pill,
+    justifyContent: 'center',
+    minHeight: 36,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+  },
 });
