@@ -280,14 +280,6 @@ export function SectionHeader({ kicker, title }: { kicker: string; title: string
   );
 }
 
-export function DemoBadge() {
-  return (
-    <View style={styles.demoBadge}>
-      <Text style={styles.demoBadgeText}>DEMO RECIPES</Text>
-    </View>
-  );
-}
-
 export function LiveBadge() {
   return (
     <View style={styles.liveBadge}>
@@ -373,13 +365,6 @@ const styles = StyleSheet.create({
   sectionHeader: { marginBottom: spacing.md },
   kicker: { ...type.label, color: palette.primary, marginBottom: 4 },
   sectionTitle: { ...type.title, color: palette.ink },
-  demoBadge: {
-    backgroundColor: palette.demoSoft,
-    borderRadius: radii.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  demoBadgeText: { color: palette.demo, fontSize: 11, fontWeight: '800', letterSpacing: 0.8 },
   liveBadge: {
     backgroundColor: palette.primarySoft,
     borderRadius: radii.pill,
