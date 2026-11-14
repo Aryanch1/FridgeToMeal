@@ -6,7 +6,7 @@ OpenAI-compatible chat completions endpoint).
 
 The Gemini API key lives server-side only, in the GEMINI_API_KEY
 environment variable. When no key is configured the function answers 501
-and the app falls back to its on-device demo recipes.
+and the app shows its retry state — recipes are always live AI.
 """
 
 import json
@@ -135,7 +135,7 @@ class handler(BaseHTTPRequestHandler):
         diet = str(body.get("diet") or "Any")[:40]
         meal_type = str(body.get("mealType") or "Any")[:40]
 
-        api_key = os.environ.get("GEMINI_API_KEY")
+        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("Gemini_API_KEY")
         if not api_key:
             _send(self, 501, {"error": {"message": "Hosted AI is not configured"}})
             return
