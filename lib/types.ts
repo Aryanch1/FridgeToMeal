@@ -40,6 +40,7 @@ export const MEAL_TYPES: MealType[] = ['Any', 'Breakfast', 'Lunch', 'Dinner', 'S
 /** Common fridge items offered as one-tap quick-add chips. */
 export const QUICK_ADD: string[] = [
   'Eggs',
+  'Broccoli',
   'Tomatoes',
   'Spinach',
   'Chicken',
