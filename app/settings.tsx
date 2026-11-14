@@ -20,6 +20,8 @@ export default function SettingsScreen() {
     saved,
     clearSaved,
     clearIngredients,
+    history,
+    clearHistory,
     resultSource,
     user,
     signOut,
@@ -118,6 +120,23 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const [confirmClearHistory, setConfirmClearHistory] = useState(false);
+  const doClearHistory = () => {
+    if (Platform.OS === 'web') {
+      if (confirmClearHistory) {
+        clearHistory();
+        setConfirmClearHistory(false);
+      } else {
+        setConfirmClearHistory(true);
+      }
+      return;
+    }
+    Alert.alert('Clear search history?', 'This removes your past searches from this device.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Clear', style: 'destructive', onPress: clearHistory },
+    ]);
+  };
+
   return (
     <View style={styles.root}>
       <AuroraBackground />
@@ -189,7 +208,7 @@ export default function SettingsScreen() {
                 ) : null}
                 {profileMsg ? <Text style={styles.authMsg}>{profileMsg}</Text> : null}
                 <Text style={styles.cardBody}>
-                  Your saved recipes and fridge list sync to your account, so they are there on
+                  Your saved recipes and search history sync to your account, so they are there on
                   every device you sign in on.
                 </Text>
                 <View style={styles.row}>
@@ -199,7 +218,7 @@ export default function SettingsScreen() {
             ) : (
               <>
                 <Text style={styles.cardBody}>
-                  Create an account or log in to keep your saved recipes and fridge list in your
+                  Create an account or log in to keep your saved recipes and search history in your
                   account — they follow you across devices. Use Google, or your email and a
                   password.
                 </Text>
@@ -231,6 +250,21 @@ export default function SettingsScreen() {
           </GlassCard>
 
           <GlassCard style={styles.card}>
+            <Text style={styles.cardTitle}>Search history</Text>
+            <Text style={styles.cardBody}>
+              {history.length} past search{history.length === 1 ? '' : 'es'} ·{' '}
+              {user ? 'synced to your account.' : 'stored only on this device.'} New visits
+              always start fresh — history is only there when you want to re-use a search.
+            </Text>
+            <View style={styles.row}>
+              <GhostButton
+                label={confirmClearHistory ? 'Tap again to confirm' : 'Clear search history'}
+                onPress={doClearHistory}
+              />
+            </View>
+          </GlassCard>
+
+          <GlassCard style={styles.card}>
             <Text style={styles.cardTitle}>Fridge</Text>
             <Text style={styles.cardBody}>Start fresh with an empty ingredient list.</Text>
             <View style={styles.row}>
@@ -248,7 +282,7 @@ export default function SettingsScreen() {
             <Text style={styles.cardBody}>
               Version 1.1.0 · Built with React Native, Expo and TypeScript. Every recipe is
               suggested live by Gemini AI through the hosted recipe service. Signed in, your
-              saved recipes and fridge list sync to your own account; signed out, they stay on
+              saved recipes and search history sync to your own account; signed out, they stay on
               this device.
             </Text>
             <Text style={styles.copy}>© 2026 Aryanmouli Cherupalli</Text>

@@ -135,7 +135,7 @@ export default function WelcomeScreen() {
               Continue without an account
             </Text>
             <Text style={styles.fine}>
-              Signed in, your saved recipes and fridge list sync to your own account. Without an
+              Signed in, your saved recipes and search history sync to your own account. Without an
               account, they stay only on this device.
             </Text>
           </Animated.View>

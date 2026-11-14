@@ -23,7 +23,7 @@ const FAQS = [
   },
   {
     q: 'Is my food data sent anywhere?',
-    a: 'Only the ingredient list itself is sent to the recipe service when you search, and only to generate your recipes. If you sign in with Google, your saved recipes and fridge list are stored in your own account so they follow you across devices; signed out, they stay only on this device.',
+    a: 'Only the ingredient list itself is sent to the recipe service when you search, and only to generate your recipes. If you sign in with Google, your saved recipes and search history are stored in your own account so they follow you across devices; signed out, they stay only on this device.',
   },
   {
     q: 'How do I refresh the suggestions?',

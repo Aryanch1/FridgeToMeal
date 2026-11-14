@@ -57,6 +57,15 @@ function Splash({ onDone }: { onDone: () => void }) {
   );
 }
 
+function formatWhen(at: number): string {
+  const d = new Date(at);
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (sameDay(d, new Date())) return 'Today';
+  if (sameDay(d, new Date(Date.now() - 86400000))) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -72,6 +81,8 @@ export default function HomeScreen() {
     setMealType,
     find,
     loading,
+    history,
+    applyHistory,
   } = useApp();
   const [showSplash, setShowSplash] = useState(true);
   const [draft, setDraft] = useState('');
@@ -202,6 +213,36 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
+      {/* Recent searches — saved history; a new visit always starts fresh */}
+      {history.length > 0 ? (
+        <Animated.View entering={FadeInDown.delay(280).springify()} style={styles.historyWrap}>
+          <GlassCard>
+            <Text style={styles.historyTitle}>Recent searches</Text>
+            {history.slice(0, 5).map((entry) => (
+              <SpringPress key={entry.id} onPress={() => applyHistory(entry)}>
+                <View style={styles.historyRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.historyMain}>{entry.ingredients.join(', ')}</Text>
+                    <Text style={styles.historySub}>
+                      {[
+                        entry.diet !== 'Any' ? entry.diet : null,
+                        entry.mealType !== 'Any' ? entry.mealType : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'Any diet · Any meal'}
+                      {' · '}
+                      {formatWhen(entry.at)}
+                    </Text>
+                  </View>
+                  <Text style={styles.historyUse}>Use</Text>
+                </View>
+              </SpringPress>
+            ))}
+            <Text style={styles.hint}>Tap one to load it again — this page always starts fresh.</Text>
+          </GlassCard>
+        </Animated.View>
+      ) : null}
+
       <Animated.View entering={FadeInDown.delay(320).springify()} style={styles.footerRow}>
         <GhostButton label="How it works" onPress={() => router.push('/help')} />
       </Animated.View>
@@ -326,4 +367,18 @@ const styles = StyleSheet.create({
   statNumber: { color: palette.primaryDeep, fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
   statLabel: { color: palette.muted, fontSize: 10, fontWeight: '800', letterSpacing: 0.8, marginTop: 4 },
   footerRow: { marginTop: spacing.lg },
+  historyWrap: { marginTop: spacing.lg },
+  historyTitle: { color: palette.ink, fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
+  historyRow: {
+    alignItems: 'center',
+    borderTopColor: palette.line,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+  },
+  historyMain: { color: palette.ink, fontSize: 15, fontWeight: '700' },
+  historySub: { color: palette.muted, fontSize: 12, fontWeight: '600', marginTop: 2 },
+  historyUse: { color: palette.primary, fontSize: 14, fontWeight: '800' },
 });
