@@ -27,6 +27,9 @@ Text contrast stays accessible on glass at all times.
 
 1. **Splash** — animated glass orb filling with green + "FridgeToMeal" wordmark,
    gentle float. Auto-advances after ~1.9s. (No separate loading screen.)
+1b. **Welcome / sign-in** — for signed-out users: app mark, tagline, then
+   "Continue with Google", "Create account" and "Log in" (email + password
+   forms), and "Continue without an account". Signed-in users skip it.
 2. **Home / Cook** — bold display headline ("Cook what's already in your
    fridge."), subline, then a glass sheet with: ingredient text input + circular
    add button, added-ingredient chips (tap to remove), quick-add chips of common
@@ -45,8 +48,10 @@ Text contrast stays accessible on glass at all times.
    screen on phones; as the right pane on tablets/foldables/desktop.
 5. **Saved** — saved-recipe grid (same card component), empty state with a
    "Find a recipe" action, saved-count badge on the tab bar.
-6. **Settings / Profile** — Google account card (sign in / profile / sign out),
-   recipe storage info (account-synced when signed in, on-device when not),
+6. **Settings / Profile** — account card: avatar + change-picture, editable
+   display name, email and sign-in method, password reset (email accounts),
+   sign out; recipe storage info (account-synced when signed in, on-device
+   when not),
    clear saved recipes (two-tap confirm on web, native alert on mobile), clear
    ingredients, About card with version and copyright.
 7. **Help** — six FAQ glass cards answering how it works, what match % means,

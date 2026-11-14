@@ -30,10 +30,14 @@ everything is already at home — no shopping trip needed.
   plus exactly what you'd still need to pick up.
 - **Recipe detail** — ingredients split into "You have" and "To pick up",
   numbered cooking steps, servings and difficulty.
-- **Google sign-in** — sign in with your Google account (Firebase
-  Authentication). Your profile, saved recipes and fridge list live in your
-  own account and follow you across devices; signed out, everything stays
-  on this device.
+- **Accounts, like every other app** — the app opens on a sign-in screen:
+  create an account with email + password, log in, continue with Google
+  (Firebase Authentication), or continue without an account. Signed in,
+  your profile, saved recipes and fridge list live in your own account
+  and follow you across devices.
+- **Profile settings** — in Settings you can change your profile picture
+  and your display name, see how you signed in, and (for email accounts)
+  get a password-reset link by email.
 - **Save favourites** — recipes you like live on the Saved tab, stored
   in your account when signed in, on-device when not.
 - **Custom pull-to-refresh** — pull the results list and a glass orb fills with
@@ -53,8 +57,9 @@ everything is already at home — no shopping trip needed.
 - **Google Gemini** (`gemini-3.5-flash-lite`) via the OpenAI-compatible endpoint
 - **Python backend** — `api/recipes.py`, a Vercel serverless function that holds
   the Gemini key server-side (never in the app or the repo)
-- **Firebase Authentication + Cloud Firestore** — Google sign-in, per-user
-  profile and saved-recipe storage with owner-only security rules
+- **Firebase Authentication + Cloud Firestore** — email/password and
+  Google sign-in, per-user profile (name, avatar) and saved-recipe
+  storage with owner-only security rules
 - **AsyncStorage** for the signed-out local copy of saved recipes and ingredients
 
 ## How to run
