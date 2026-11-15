@@ -37,7 +37,7 @@
     "scheme": "fridgetomeal",
     "slug": "fridgetomeal",
     "userInterfaceStyle": "light",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "web": {
       "favicon": "./assets/favicon.png",
       "output": "static"
