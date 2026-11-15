@@ -48,7 +48,7 @@ export function AuroraBackground() {
 const styles = StyleSheet.create({
   root: { ...StyleSheet.absoluteFill },
   blobA: {
-    backgroundColor: 'rgba(47, 168, 102, 0.20)',
+    backgroundColor: 'rgba(47, 168, 102, 0.13)',
     borderRadius: 200,
     height: 340,
     position: 'absolute',

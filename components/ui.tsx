@@ -198,6 +198,11 @@ export function GlassCard({
   // the "white backside" testers saw on Android). The inner view clips
   // the content to the rounded shape. Real backdrop blur is web-only;
   // on native the translucent surface over the aurora reads as frost.
+  // The clip layer also carries a near-solid frosted background
+  // (palette.sheet): with a fully translucent card the aurora blobs show
+  // through the card body on Android, and a blob's tonal boundary reads
+  // as a hard white sharp edge along the card — a uniform frosted-solid
+  // card is the intended premium look everywhere.
   return (
     <View style={[styles.glassShadow, style]}>
       <View style={styles.glassClip}>
@@ -359,6 +364,7 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   glassClip: {
+    backgroundColor: palette.sheet,
     borderColor: 'rgba(255,255,255,0.75)',
     borderRadius: radii.card,
     borderWidth: 1,
