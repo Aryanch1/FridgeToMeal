@@ -50,13 +50,17 @@ jobs:
           name: fridgetomeal-apk
           path: FridgeToMeal.apk
 
+      - name: Read app version
+        id: appver
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Publish APK to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-v1.0.0
-          name: FridgeToMeal Android APK (v1.0.0)
+          name: FridgeToMeal Android APK (v${{ steps.appver.outputs.version }})
           body: |
-            Installable Android APK for FridgeToMeal v1.0.0.
+            Installable Android APK for FridgeToMeal v${{ steps.appver.outputs.version }}.
 
             Turn what's already in your fridge into dinner — AI-matched recipes ranked by how much of each one you already have.
 
