@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState, type ElementRef } from 'react';
 import {
   Image,
@@ -93,9 +94,9 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<ElementRef<typeof ScrollView>>(null);
   const { height: winHeight } = useWindowDimensions();
-  // The photo hero takes the top ~40% of the first viewport, clamped so
+  // The photo hero takes the top ~46% of the first viewport, clamped so
   // it stays a hero (never a sliver, never a full screen).
-  const heroHeight = Math.min(480, Math.max(340, Math.round(winHeight * 0.42)));
+  const heroHeight = Math.min(520, Math.max(360, Math.round(winHeight * 0.46)));
   const [formY, setFormY] = useState(0);
   const scrollToForm = () => {
     const topPad = Math.max(insets.top, 16) + 8;
@@ -138,13 +139,20 @@ export default function HomeScreen() {
         <View style={[styles.heroShadow, { height: heroHeight }]}>
           <View style={styles.heroClip}>
             <Image source={HERO_PHOTO} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            {/* Soft top scrim: deepens the photo's top band so the hero
+                reads with depth instead of flat and washed out. */}
+            <LinearGradient
+              colors={['rgba(8, 38, 18, 0.20)', 'rgba(8, 38, 18, 0)']}
+              style={styles.heroScrim}
+              pointerEvents="none"
+            />
             <View style={styles.heroPanel}>
               {Platform.OS === 'web' ? (
                 <BlurView intensity={65} tint="light" style={StyleSheet.absoluteFill} />
               ) : null}
               <View style={styles.heroPanelInner}>
                 <Text style={styles.kicker}>FRIDGE TO MEAL</Text>
-                <Text style={[styles.headline, r.display]}>
+                <Text style={[styles.headline, r.display, styles.heroHeadline]}>
                   Cook what’s{'\n'}already in{'\n'}your fridge.
                 </Text>
                 <View style={styles.heroCta}>
@@ -359,20 +367,22 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   heroClip: { borderRadius: radii.card, flex: 1, overflow: 'hidden' },
+  heroScrim: { height: '40%', left: 0, position: 'absolute', right: 0, top: 0 },
   heroPanel: {
     backgroundColor: palette.glassStrong,
     borderColor: 'rgba(255,255,255,0.75)',
     borderRadius: radii.md,
     borderWidth: 1,
-    bottom: spacing.md,
+    bottom: spacing.sm,
     left: spacing.md,
     overflow: 'hidden',
     position: 'absolute',
     right: spacing.md,
   },
-  heroPanelInner: { padding: spacing.md },
-  heroCta: { marginTop: spacing.md },
-  kicker: { color: palette.primary, fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: spacing.sm },
+  heroPanelInner: { paddingHorizontal: spacing.md, paddingVertical: 12 },
+  heroHeadline: { fontSize: 33, lineHeight: 37 },
+  heroCta: { marginTop: 10 },
+  kicker: { color: palette.primary, fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: 6 },
   headline: { color: palette.ink },
   sub: { color: palette.body, fontSize: 17, lineHeight: 25, marginTop: spacing.md, maxWidth: 480 },
   sheetTitle: { color: palette.ink, fontFamily: font.display, fontSize: 20, letterSpacing: -0.3, marginBottom: spacing.md },

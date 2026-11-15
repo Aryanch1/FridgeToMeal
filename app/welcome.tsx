@@ -51,15 +51,23 @@ export default function WelcomeScreen() {
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [msgOk, setMsgOk] = useState(false);
 
   const doGoogle = async () => {
     setBusy(true);
     setMsg(null);
+    setMsgOk(false);
     try {
       await signIn();
       // The layout gate routes to Home as soon as the user lands.
-    } catch {
-      setMsg('Google sign-in did not complete. Please try again.');
+    } catch (e) {
+      // Surface the actual reason (google.native.ts throws plain Errors
+      // that name the failure) — never fail silently.
+      setMsg(
+        e instanceof Error && e.message
+          ? e.message
+          : 'Google sign-in did not complete. Please try again.',
+      );
       setBusy(false);
     }
   };
@@ -71,11 +79,13 @@ export default function WelcomeScreen() {
 
   const doSubmit = async () => {
     if (mode === 'signup' && password !== confirm) {
+      setMsgOk(false);
       setMsg('Passwords do not match. Enter the same password twice.');
       return;
     }
     setBusy(true);
     setMsg(null);
+    setMsgOk(false);
     try {
       if (mode === 'signup') {
         await signUpWithEmail(name, email, password);
@@ -85,6 +95,7 @@ export default function WelcomeScreen() {
         // Success: the layout gate routes to Home.
       } else {
         await resetPasswordForEmail(email);
+        setMsgOk(true);
         setMsg('Sent — check your email to reset your password.');
         setBusy(false);
       }
@@ -97,6 +108,7 @@ export default function WelcomeScreen() {
   const openForm = (next: Mode) => {
     setMode(next);
     setMsg(null);
+    setMsgOk(false);
   };
 
   return (
@@ -130,7 +142,7 @@ export default function WelcomeScreen() {
             <Text style={styles.caption}>New or returning — Google handles both.</Text>
             <GhostButton label="Create account" onPress={() => openForm('signup')} />
             <GhostButton label="Log in" onPress={() => openForm('login')} />
-            {msg ? <Text style={styles.msg}>{msg}</Text> : null}
+            {msg ? <Text style={msgOk ? styles.msgOk : styles.msg}>{msg}</Text> : null}
             <Text style={styles.guestLink} onPress={doGuest}>
               Continue without an account
             </Text>
@@ -206,7 +218,7 @@ export default function WelcomeScreen() {
                 Forgot password?
               </Text>
             ) : null}
-            {msg ? <Text style={styles.msg}>{msg}</Text> : null}
+            {msg ? <Text style={msgOk ? styles.msgOk : styles.msg}>{msg}</Text> : null}
             <PrimaryButton
               label={
                 busy
@@ -287,6 +299,7 @@ const styles = StyleSheet.create({
     minHeight: 54,
     paddingHorizontal: spacing.md,
   },
-  msg: { color: palette.body, fontSize: 14, lineHeight: 20, textAlign: 'center' },
+  msg: { color: palette.error, fontSize: 14, fontWeight: '600', lineHeight: 20, textAlign: 'center' },
+  msgOk: { color: palette.primary, fontSize: 14, fontWeight: '600', lineHeight: 20, textAlign: 'center' },
   fine: { color: palette.muted, fontSize: 13, lineHeight: 19, textAlign: 'center' },
 });

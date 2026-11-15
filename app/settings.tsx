@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
@@ -10,6 +11,10 @@ import { TabBar } from '../components/TabBar';
 import { GhostButton, GlassCard, PrimaryButton, SectionHeader } from '../components/ui';
 import { useApp } from '../lib/store';
 import { palette, spacing, useResponsive } from '../lib/theme';
+
+/** App version from the single source of truth (app.json via
+ * expo-constants) so the About label can never go stale again. */
+const APP_VERSION = Constants.expoConfig?.version ?? '1.2.1';
 
 /** Settings / profile screen: preferences, saved data, about. */
 export default function SettingsScreen() {
@@ -280,7 +285,7 @@ export default function SettingsScreen() {
               by how much you already have.
             </Text>
             <Text style={styles.cardBody}>
-              Version 1.2.0 · Built with React Native, Expo and TypeScript. Every recipe is
+              Version {APP_VERSION} · Built with React Native, Expo and TypeScript. Every recipe is
               suggested live by Gemini AI through the hosted recipe service. Signed in, your
               saved recipes and search history sync to your own account; signed out, they stay on
               this device.
