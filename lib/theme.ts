@@ -51,11 +51,21 @@ export const radii = {
   input: 24,
 } as const;
 
+/**
+ * Display typeface — Sora (bundled via @expo-google-fonts/sora, loaded
+ * in app/_layout.tsx). Used for headlines, screen titles and big
+ * numbers; body text stays on the system font.
+ */
+export const font = {
+  display: 'Sora_800ExtraBold',
+  bold: 'Sora_700Bold',
+} as const;
+
 export const type = {
-  display: { fontSize: 42, lineHeight: 46, fontWeight: '800' as const, letterSpacing: -0.8 },
-  displayWide: { fontSize: 56, lineHeight: 60, fontWeight: '800' as const, letterSpacing: -1 },
-  title: { fontSize: 24, lineHeight: 30, fontWeight: '800' as const, letterSpacing: -0.3 },
-  subtitle: { fontSize: 17, lineHeight: 24, fontWeight: '700' as const },
+  display: { fontFamily: font.display, fontSize: 42, lineHeight: 46, letterSpacing: -0.8 },
+  displayWide: { fontFamily: font.display, fontSize: 56, lineHeight: 60, letterSpacing: -1 },
+  title: { fontFamily: font.display, fontSize: 24, lineHeight: 30, letterSpacing: -0.3 },
+  subtitle: { fontFamily: font.bold, fontSize: 17, lineHeight: 24 },
   body: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const },
   bodyStrong: { fontSize: 15, lineHeight: 22, fontWeight: '700' as const },
   caption: { fontSize: 12, lineHeight: 16, fontWeight: '600' as const, letterSpacing: 0.6 },
