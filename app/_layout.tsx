@@ -1,3 +1,4 @@
+import { Sora_700Bold, Sora_800ExtraBold, useFonts } from '@expo-google-fonts/sora';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
@@ -46,6 +47,13 @@ function Gate() {
 }
 
 export default function RootLayout() {
+  // Sora is the display face for headlines, titles and big numbers —
+  // hold on the pale splash color until it is ready so no headline
+  // ever flashes in the system font.
+  const [fontsLoaded] = useFonts({ Sora_700Bold, Sora_800ExtraBold });
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: '#EAF7EE' }} />;
+  }
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

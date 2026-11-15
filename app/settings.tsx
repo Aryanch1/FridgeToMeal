@@ -280,7 +280,7 @@ export default function SettingsScreen() {
               by how much you already have.
             </Text>
             <Text style={styles.cardBody}>
-              Version 1.1.2 · Built with React Native, Expo and TypeScript. Every recipe is
+              Version 1.2.0 · Built with React Native, Expo and TypeScript. Every recipe is
               suggested live by Gemini AI through the hosted recipe service. Signed in, your
               saved recipes and search history sync to your own account; signed out, they stay on
               this device.

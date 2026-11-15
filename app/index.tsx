@@ -1,12 +1,15 @@
 import { useRouter } from 'expo-router';
+import { BlurView } from 'expo-blur';
 import React, { useEffect, useRef, useState, type ElementRef } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, {
@@ -22,8 +25,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuroraBackground } from '../components/AuroraBackground';
 import { TabBar } from '../components/TabBar';
 import { Chip, GhostButton, GlassCard, PrimaryButton, SpringPress } from '../components/ui';
+import { HERO_PHOTO } from '../lib/foodPhotos';
 import { useApp } from '../lib/store';
-import { palette, radii, spacing, useResponsive } from '../lib/theme';
+import { font, palette, radii, shadows, spacing, useResponsive } from '../lib/theme';
 import { DIETS, MEAL_TYPES, QUICK_ADD } from '../lib/types';
 
 /**
@@ -88,6 +92,15 @@ export default function HomeScreen() {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<ElementRef<typeof ScrollView>>(null);
+  const { height: winHeight } = useWindowDimensions();
+  // The photo hero takes the top ~40% of the first viewport, clamped so
+  // it stays a hero (never a sliver, never a full screen).
+  const heroHeight = Math.min(480, Math.max(340, Math.round(winHeight * 0.42)));
+  const [formY, setFormY] = useState(0);
+  const scrollToForm = () => {
+    const topPad = Math.max(insets.top, 16) + 8;
+    scrollRef.current?.scrollTo({ y: Math.max(formY + topPad - 16, 0), animated: true });
+  };
 
   // Tapping a past search loads it into the form at the top of the page —
   // scroll back up so the user actually sees it load (before this, the tap
@@ -119,17 +132,38 @@ export default function HomeScreen() {
 
   const content = (
     <View style={[styles.shell, { maxWidth: r.contentMaxWidth, paddingHorizontal: r.pad }]}>
-      {/* Hero */}
+      {/* Hero — photo first, with the headline and the primary CTA in a
+          frosted panel over the photo's lower area. */}
       <Animated.View entering={FadeInDown.springify()} style={styles.hero}>
-        <Text style={styles.kicker}>FRIDGE TO MEAL</Text>
-        <Text style={[styles.headline, r.display]}>Cook what’s{'\n'}already in{'\n'}your fridge.</Text>
+        <View style={[styles.heroShadow, { height: heroHeight }]}>
+          <View style={styles.heroClip}>
+            <Image source={HERO_PHOTO} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <View style={styles.heroPanel}>
+              {Platform.OS === 'web' ? (
+                <BlurView intensity={65} tint="light" style={StyleSheet.absoluteFill} />
+              ) : null}
+              <View style={styles.heroPanelInner}>
+                <Text style={styles.kicker}>FRIDGE TO MEAL</Text>
+                <Text style={[styles.headline, r.display]}>
+                  Cook what’s{'\n'}already in{'\n'}your fridge.
+                </Text>
+                <View style={styles.heroCta}>
+                  <PrimaryButton label="Start cooking" onPress={scrollToForm} />
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
         <Text style={styles.sub}>
           Tell us what’s left over. We’ll turn it into dinner — and keep good food out of the bin.
         </Text>
       </Animated.View>
 
       {/* Ingredient sheet */}
-      <Animated.View entering={FadeInDown.delay(120).springify()}>
+      <Animated.View
+        entering={FadeInDown.delay(120).springify()}
+        onLayout={(e) => setFormY(e.nativeEvent.layout.y)}
+      >
         <GlassCard>
           <Text style={styles.sheetTitle}>What’s in your fridge?</Text>
           <View style={styles.inputRow}>
@@ -314,15 +348,34 @@ const styles = StyleSheet.create({
     right: 0,
   },
   splashGlyph: { color: palette.primaryDeep, fontSize: 44 },
-  splashTitle: { color: palette.ink, fontSize: 44, fontWeight: '800', letterSpacing: -1 },
+  splashTitle: { color: palette.ink, fontFamily: font.display, fontSize: 44, letterSpacing: -1 },
   splashSub: { color: palette.body, fontSize: 17, fontWeight: '600', marginTop: spacing.sm },
   shell: { alignSelf: 'center', width: '100%' },
   scrollContent: { flexGrow: 1 },
   hero: { marginBottom: spacing.lg, marginTop: spacing.md },
+  heroShadow: {
+    backgroundColor: palette.primaryPale,
+    borderRadius: radii.card,
+    ...shadows.card,
+  },
+  heroClip: { borderRadius: radii.card, flex: 1, overflow: 'hidden' },
+  heroPanel: {
+    backgroundColor: palette.glassStrong,
+    borderColor: 'rgba(255,255,255,0.75)',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    bottom: spacing.md,
+    left: spacing.md,
+    overflow: 'hidden',
+    position: 'absolute',
+    right: spacing.md,
+  },
+  heroPanelInner: { padding: spacing.md },
+  heroCta: { marginTop: spacing.md },
   kicker: { color: palette.primary, fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: spacing.sm },
-  headline: { color: palette.ink, marginBottom: spacing.md },
-  sub: { color: palette.body, fontSize: 17, lineHeight: 25, maxWidth: 480 },
-  sheetTitle: { color: palette.ink, fontSize: 20, fontWeight: '800', letterSpacing: -0.3, marginBottom: spacing.md },
+  headline: { color: palette.ink },
+  sub: { color: palette.body, fontSize: 17, lineHeight: 25, marginTop: spacing.md, maxWidth: 480 },
+  sheetTitle: { color: palette.ink, fontFamily: font.display, fontSize: 20, letterSpacing: -0.3, marginBottom: spacing.md },
   inputRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
   input: {
     backgroundColor: 'rgba(255,255,255,0.85)',
@@ -379,11 +432,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.md,
   },
-  statNumber: { color: palette.primaryDeep, fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
+  statNumber: { color: palette.primaryDeep, fontFamily: font.display, fontSize: 32, letterSpacing: -0.5 },
   statLabel: { color: palette.muted, fontSize: 10, fontWeight: '800', letterSpacing: 0.8, marginTop: 4 },
   footerRow: { marginTop: spacing.lg },
   historyWrap: { marginTop: spacing.lg },
-  historyTitle: { color: palette.ink, fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
+  historyTitle: { color: palette.ink, fontFamily: font.display, fontSize: 17, letterSpacing: -0.2 },
   historyRow: {
     alignItems: 'center',
     borderTopColor: palette.line,
