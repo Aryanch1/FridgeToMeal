@@ -1,124 +1,174 @@
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { palette, spacing, type } from '../lib/theme';
+import { getFoodPhoto } from '../lib/foodPhotos';
+import { font, palette, radii, shadows, spacing, type } from '../lib/theme';
 import type { Recipe } from '../lib/types';
-import { GlassCard, GhostButton, PrimaryButton } from './ui';
+import { GhostButton, SpringPress } from './ui';
 
 /**
  * Full recipe detail — used by the /recipe/[id] screen and by the
  * right pane of the two-pane results layout on tablets / foldables.
+ * Photography first: a full photo hero, then every detail rides in a
+ * rounded sheet overlapping it. The primary CTA is one gradient pill
+ * with the match figure integrated in its left segment.
  */
 export function RecipeDetail({
   recipe,
   saved,
   onToggleSaved,
   onCooked,
+  onBack,
 }: {
   recipe: Recipe;
   saved: boolean;
   onToggleSaved: () => void;
   onCooked?: () => void;
+  /** When given, a frosted circular back button floats on the hero. */
+  onBack?: () => void;
 }) {
   const have = recipe.ingredients.filter((i) => i.have);
   const missing = recipe.ingredients.filter((i) => !i.have);
   return (
-    <View style={styles.root}>
+    <View>
       <Animated.View entering={FadeInDown.springify()}>
-        <GlassCard>
-          <Text style={styles.cuisine}>{recipe.cuisine.toUpperCase()}</Text>
-          <Text style={styles.title}>{recipe.title}</Text>
-          <Text style={styles.description}>{recipe.description}</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.stat}>
-              <Text style={styles.statNumber}>{recipe.match}%</Text>
-              <Text style={styles.statLabel}>MATCH</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.stat}>
-              <Text style={styles.statNumber}>{recipe.timeMinutes}</Text>
-              <Text style={styles.statLabel}>MINUTES</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.stat}>
-              <Text style={styles.statNumber}>{recipe.servings}</Text>
-              <Text style={styles.statLabel}>SERVINGS</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.stat}>
-              <Text style={styles.statNumber}>{recipe.difficulty}</Text>
-              <Text style={styles.statLabel}>LEVEL</Text>
-            </View>
-          </View>
-          <View style={styles.actions}>
-            <View style={{ flex: 1 }}>
-              <PrimaryButton
-                label={saved ? 'Saved ♥' : 'Save recipe'}
-                onPress={onToggleSaved}
-              />
-            </View>
-            {onCooked ? <GhostButton label="I cooked it ✓" onPress={onCooked} /> : null}
-          </View>
-        </GlassCard>
-      </Animated.View>
-
-      <Animated.View entering={FadeInDown.delay(90).springify()}>
-        <GlassCard style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            You have · {have.length} of {recipe.ingredients.length}
-          </Text>
-          {have.map((ing) => (
-            <View key={ing.name} style={styles.ingRow}>
-              <View style={styles.checkHave}>
-                <Text style={styles.checkText}>✓</Text>
-              </View>
-              <Text style={styles.ingName}>{ing.name}</Text>
-              <Text style={styles.ingAmount}>{ing.amount}</Text>
-            </View>
-          ))}
-          {missing.length > 0 ? (
-            <>
-              <Text style={[styles.sectionTitle, styles.missingTitle]}>
-                To pick up · {missing.length}
-              </Text>
-              {missing.map((ing) => (
-                <View key={ing.name} style={styles.ingRow}>
-                  <View style={styles.checkMissing}>
-                    <Text style={styles.checkTextMissing}>○</Text>
-                  </View>
-                  <Text style={styles.ingName}>{ing.name}</Text>
-                  <Text style={styles.ingAmount}>{ing.amount}</Text>
+        <View style={styles.heroShadow}>
+          <Image source={getFoodPhoto(recipe)} style={styles.hero} resizeMode="cover" />
+          {onBack ? (
+            <View style={styles.backWrap}>
+              <SpringPress onPress={onBack} haptic>
+                <View style={styles.backButton}>
+                  {Platform.OS === 'web' ? (
+                    <BlurView intensity={70} tint="light" style={StyleSheet.absoluteFill} />
+                  ) : null}
+                  <Text style={styles.backGlyph}>‹</Text>
                 </View>
-              ))}
-            </>
-          ) : (
-            <Text style={styles.allHave}>Everything is already in your fridge — no shopping needed.</Text>
-          )}
-        </GlassCard>
+              </SpringPress>
+            </View>
+          ) : null}
+        </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(180).springify()}>
-        <GlassCard style={styles.section}>
-          <Text style={styles.sectionTitle}>How to cook it</Text>
-          {recipe.steps.map((step, i) => (
-            <View key={`${i}-${step.slice(0, 16)}`} style={styles.stepRow}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>{i + 1}</Text>
-              </View>
-              <Text style={styles.stepText}>{step}</Text>
+      <Animated.View entering={FadeInDown.delay(90).springify()} style={styles.sheet}>
+        <Text style={styles.cuisine}>{recipe.cuisine.toUpperCase()}</Text>
+        <Text style={styles.title}>{recipe.title}</Text>
+        <Text style={styles.description}>{recipe.description}</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>{recipe.timeMinutes}</Text>
+            <Text style={styles.statLabel}>MINUTES</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>{recipe.servings}</Text>
+            <Text style={styles.statLabel}>SERVINGS</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>{recipe.difficulty}</Text>
+            <Text style={styles.statLabel}>LEVEL</Text>
+          </View>
+        </View>
+        <View style={styles.actions}>
+          <View style={{ flex: 1 }}>
+            <SpringPress onPress={onToggleSaved} haptic>
+              <LinearGradient
+                colors={[palette.primaryLight, palette.primaryDeep]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.ctaPill, shadows.glow]}
+              >
+                <Text style={styles.ctaFigure}>{recipe.match}%</Text>
+                <View style={styles.ctaDivider} />
+                <Text style={styles.ctaLabel}>{saved ? 'Saved ♥' : 'Save recipe'}</Text>
+              </LinearGradient>
+            </SpringPress>
+          </View>
+          {onCooked ? <GhostButton label="I cooked it ✓" onPress={onCooked} /> : null}
+        </View>
+
+        <View style={styles.divider} />
+        <Text style={styles.sectionTitle}>
+          You have · {have.length} of {recipe.ingredients.length}
+        </Text>
+        {have.map((ing) => (
+          <View key={ing.name} style={styles.ingRow}>
+            <View style={styles.checkHave}>
+              <Text style={styles.checkText}>✓</Text>
             </View>
-          ))}
-        </GlassCard>
+            <Text style={styles.ingName}>{ing.name}</Text>
+            <Text style={styles.ingAmount}>{ing.amount}</Text>
+          </View>
+        ))}
+        {missing.length > 0 ? (
+          <>
+            <Text style={[styles.sectionTitle, styles.missingTitle]}>
+              To pick up · {missing.length}
+            </Text>
+            {missing.map((ing) => (
+              <View key={ing.name} style={styles.ingRow}>
+                <View style={styles.checkMissing}>
+                  <Text style={styles.checkTextMissing}>○</Text>
+                </View>
+                <Text style={styles.ingName}>{ing.name}</Text>
+                <Text style={styles.ingAmount}>{ing.amount}</Text>
+              </View>
+            ))}
+          </>
+        ) : (
+          <Text style={styles.allHave}>Everything is already in your fridge — no shopping needed.</Text>
+        )}
+
+        <View style={styles.divider} />
+        <Text style={styles.sectionTitle}>How to cook it</Text>
+        {recipe.steps.map((step, i) => (
+          <View key={`${i}-${step.slice(0, 16)}`} style={styles.stepRow}>
+            <View style={styles.stepNumber}>
+              <Text style={styles.stepNumberText}>{i + 1}</Text>
+            </View>
+            <Text style={styles.stepText}>{step}</Text>
+          </View>
+        ))}
       </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { gap: spacing.md },
+  heroShadow: {
+    backgroundColor: palette.primaryPale,
+    borderRadius: radii.card,
+    ...shadows.card,
+  },
+  hero: { borderRadius: radii.card, height: 300, width: '100%' },
+  backWrap: { left: spacing.md, position: 'absolute', top: spacing.md },
+  backButton: {
+    alignItems: 'center',
+    backgroundColor: palette.glassStrong,
+    borderColor: 'rgba(255,255,255,0.75)',
+    borderRadius: 22,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    width: 44,
+    ...shadows.float,
+  },
+  backGlyph: { color: palette.ink, fontSize: 26, fontWeight: '700', marginTop: -3 },
+  sheet: {
+    backgroundColor: palette.sheet,
+    borderColor: 'rgba(255,255,255,0.75)',
+    borderRadius: radii.sheet,
+    borderWidth: 1,
+    marginTop: -28,
+    padding: spacing.lg,
+    ...shadows.card,
+  },
   cuisine: { ...type.label, color: palette.primary, marginBottom: 4 },
-  title: { ...type.title, color: palette.ink, fontSize: 28, lineHeight: 34, marginBottom: spacing.sm },
+  title: { color: palette.ink, fontFamily: font.display, fontSize: 28, lineHeight: 34, marginBottom: spacing.sm },
   description: { ...type.body, color: palette.body, fontSize: 16, lineHeight: 24 },
   statsRow: {
     alignItems: 'center',
@@ -129,12 +179,23 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   stat: { alignItems: 'center', flex: 1 },
-  statNumber: { color: palette.ink, fontSize: 20, fontWeight: '800', letterSpacing: -0.3 },
+  statNumber: { color: palette.ink, fontFamily: font.display, fontSize: 20, letterSpacing: -0.3 },
   statLabel: { color: palette.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1, marginTop: 2 },
   statDivider: { backgroundColor: palette.line, height: 28, width: 1 },
-  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
-  section: { marginTop: 0 },
-  sectionTitle: { color: palette.ink, fontSize: 18, fontWeight: '800', letterSpacing: -0.2, marginBottom: spacing.md },
+  actions: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
+  ctaPill: {
+    alignItems: 'center',
+    borderRadius: radii.pill,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    minHeight: 56,
+    paddingHorizontal: spacing.lg,
+  },
+  ctaFigure: { color: '#FFFFFF', fontFamily: font.display, fontSize: 19, letterSpacing: -0.3 },
+  ctaDivider: { backgroundColor: 'rgba(255,255,255,0.45)', height: 24, marginHorizontal: 14, width: 1 },
+  ctaLabel: { color: '#FFFFFF', fontSize: 17, fontWeight: '800', letterSpacing: -0.2 },
+  divider: { borderTopColor: palette.line, borderTopWidth: 1, marginVertical: spacing.lg },
+  sectionTitle: { color: palette.ink, fontFamily: font.display, fontSize: 18, letterSpacing: -0.2, marginBottom: spacing.md },
   missingTitle: { marginTop: spacing.lg },
   ingRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm, paddingVertical: 7 },
   checkHave: {
@@ -169,6 +230,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 36,
   },
-  stepNumberText: { color: palette.primaryDeep, fontSize: 16, fontWeight: '800' },
+  stepNumberText: { color: palette.primaryDeep, fontFamily: font.display, fontSize: 16 },
   stepText: { color: palette.body, flex: 1, fontSize: 15, lineHeight: 22, paddingTop: 6 },
 });

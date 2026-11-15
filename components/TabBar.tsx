@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { palette, radii } from '../lib/theme';
@@ -9,7 +9,8 @@ import { useApp } from '../lib/store';
 import { SpringPress } from './ui';
 
 /**
- * Floating glass pill tab bar — replaces the flat bottom bar.
+ * Floating frosted-glass pill tab bar — real backdrop blur on every
+ * platform, with the theme primary filling the active tab's pill.
  * Tabs: Cook (home), Saved, Settings, Help.
  */
 const TABS = [
@@ -29,9 +30,7 @@ export function TabBar() {
     <View style={[styles.wrap, { bottom: Math.max(insets.bottom, 12) }]} pointerEvents="box-none">
       <View style={styles.barShadow}>
         <View style={styles.bar}>
-          {Platform.OS === 'web' ? (
-            <BlurView intensity={22} tint="light" style={StyleSheet.absoluteFill} />
-          ) : null}
+          <BlurView intensity={75} tint="light" style={StyleSheet.absoluteFill} />
           {TABS.map((tab) => {
           const active = pathname === tab.route || (tab.route === '/' && pathname === '/index');
           const badge = tab.route === '/saved' ? saved.length : 0;
@@ -60,21 +59,22 @@ export function TabBar() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', left: 0, position: 'absolute', right: 0 },
-  // Shadow + background live on this outer pill: Android elevation on a
-  // clipped, background-less BlurView rendered as a hard white plate
-  // behind the bar. The inner bar only clips and lays out the tabs.
+  wrap: { alignItems: 'center', left: 0, paddingHorizontal: 18, position: 'absolute', right: 0 },
+  // Shadow + fallback background live on this outer pill: Android
+  // elevation on a clipped, background-less BlurView renders as a hard
+  // white plate behind the bar. The inner bar only clips the blur and
+  // lays out the tabs — same two-layer structure as GlassCard.
   barShadow: {
     backgroundColor: palette.glassStrong,
     borderRadius: radii.pill,
     shadowColor: '#10281A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 22,
     elevation: 8,
   },
   bar: {
-    borderColor: 'rgba(255,255,255,0.75)',
+    borderColor: 'rgba(255,255,255,0.7)',
     borderRadius: radii.pill,
     borderWidth: 1,
     flexDirection: 'row',

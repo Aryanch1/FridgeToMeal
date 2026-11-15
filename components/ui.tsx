@@ -183,10 +183,14 @@ export function GlassCard({
   children,
   style,
   intensity = 18,
+  flush = false,
 }: {
   children: React.ReactNode;
   style?: object;
   intensity?: number;
+  /** Flush removes the inner padding so children (e.g. a photo header)
+   * can bleed to the card's edges; the child then pads its own content. */
+  flush?: boolean;
 }) {
   // Two layers on purpose: the outer view carries the background and the
   // shadow (Android elevation needs a real background, and a shadow on a
@@ -200,7 +204,7 @@ export function GlassCard({
         {Platform.OS === 'web' ? (
           <BlurView intensity={intensity} tint="light" style={StyleSheet.absoluteFill} />
         ) : null}
-        <View style={styles.glassInner}>{children}</View>
+        <View style={[styles.glassInner, flush && styles.glassInnerFlush]}>{children}</View>
       </View>
     </View>
   );
@@ -361,6 +365,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   glassInner: { padding: spacing.md },
+  glassInnerFlush: { padding: 0 },
   dots: { alignItems: 'center', flexDirection: 'row', gap: 6, height: 24, justifyContent: 'center' },
   dot: { borderRadius: 5, height: 10, width: 10 },
   empty: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.xl },
